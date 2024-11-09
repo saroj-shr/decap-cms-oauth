@@ -1,0 +1,16 @@
+{
+    "name": "decap-cms-oauth",
+    "version": "1.0.0",
+    "description": "OAuth provider for Decap CMS",
+    "type": "module",
+    "scripts": {
+      "dev": "wrangler pages dev functions",
+      "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "dependencies": {
+      "@cloudflare/workers-types": "^4.20240208.0"
+    },
+    "devDependencies": {
+      "wrangler": "^3.28.1"
+    }
+  }
