@@ -33,54 +33,61 @@ export async function onRequest({ request, env, next }) {
   }
 
   // Handle the callback from GitHub
-  if (url.pathname === "/admin/callback" && searchParams.get("code")) {
-    console.log("Handling callback with code...");
-    const code = searchParams.get("code");
+// Handle the callback from GitHub
+if (url.pathname === "/admin/callback" && searchParams.get("code")) {
+  console.log("Handling callback with code...");
+  const code = searchParams.get("code");
 
-    try {
-      const tokenResponse = await fetch(`${config.oauth_host}${config.oauth_token_path}`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Accept": "application/json",
-        },
-        body: JSON.stringify({
-          client_id: config.github_client_id,
-          client_secret: config.github_client_secret,
-          code: code,
-          // Include the same redirect_uri here
-          redirect_uri: config.redirect_uri
-        }),
-      });
+  try {
+    const tokenResponse = await fetch(`${config.oauth_host}${config.oauth_token_path}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+      },
+      body: JSON.stringify({
+        client_id: config.github_client_id,
+        client_secret: config.github_client_secret,
+        code: code,
+        redirect_uri: config.redirect_uri,
+        scope: "repo,user" // Add this line explicitly
+      }),
+    });
 
-      if (!tokenResponse.ok) {
-        const errorText = await tokenResponse.text();
-        console.error("Token response error:", errorText);
-        throw new Error(`GitHub responded with ${tokenResponse.status}: ${errorText}`);
-      }
-
-      const tokenData = await tokenResponse.json();
-
-      if (!tokenData.access_token) {
-        throw new Error("No access token received from GitHub");
-      }
-
-      // Redirect back to main site with token
-      const redirectUrl = new URL("/admin/", config.main_site_url);
-      redirectUrl.hash = `access_token=${tokenData.access_token}`;
-
-      console.log("Redirecting to main site:", redirectUrl.toString());
-      return Response.redirect(redirectUrl.toString());
-    } catch (error) {
-      console.error("OAuth error:", error);
-      return new Response(`Authentication error: ${error.message}`, {
-        status: 500,
-        headers: {
-          "Content-Type": "text/plain"
-        }
-      });
+    if (!tokenResponse.ok) {
+      const errorText = await tokenResponse.text();
+      console.error("Token response error:", errorText);
+      throw new Error(`GitHub responded with ${tokenResponse.status}: ${errorText}`);
     }
+
+    const tokenData = await tokenResponse.json();
+    
+    // Add logging to check the received scopes
+    console.log("Received token data:", {
+      ...tokenData,
+      access_token: "REDACTED" // Don't log the actual token
+    });
+    
+    if (!tokenData.access_token) {
+      throw new Error("No access token received from GitHub");
+    }
+
+    // Redirect back to main site with token
+    const redirectUrl = new URL("/admin/", config.main_site_url);
+    redirectUrl.hash = `access_token=${tokenData.access_token}`;
+
+    console.log("Redirecting to main site:", redirectUrl.toString());
+    return Response.redirect(redirectUrl.toString());
+  } catch (error) {
+    console.error("OAuth error:", error);
+    return new Response(`Authentication error: ${error.message}`, { 
+      status: 500,
+      headers: {
+        "Content-Type": "text/plain"
+      }
+    });
   }
+}
 
   return next();
 }
